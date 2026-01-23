@@ -1,18 +1,35 @@
-Modelo de Predicción MadridBici 🚲
-Descripción
-Modelo de Regresión Lineal desarrollado en NumPy para predecir la demanda diaria del sistema público de bicicletas basado en variables meteorológicas.
+# 🚲 Predicción de Demanda: MadridBici
 
-Variables Utilizadas
-Temperatura (°C)
-Humedad (%)
-Velocidad del viento (km/h)
-Precipitación (mm)
-Rendimiento
-MAE (Error Medio Absoluto): 210.98 bicicletas.
-Instrucciones de uso
-Cargar el archivo modelo_madridbici.npz.
-Normalizar los datos de entrada con las medias/stds guardadas.
-Ejecutar la función predecir_demanda().
-Limitaciones
-No incluye factores de eventos especiales (manifestaciones, huelgas).
-El modelo asume una relación lineal entre el clima y la demanda.
+Este proyecto implementa un pipeline completo de **Machine Learning** utilizando exclusivamente **NumPy**. El objetivo es predecir la demanda diaria de alquiler de bicicletas en Madrid basándose en factores meteorológicos.
+
+## 📊 Resumen del Proyecto
+El modelo utiliza una **Regresión Lineal** (entrenada mediante la Ecuación Normal) para entender cómo variables como la temperatura, la lluvia o el viento afectan al uso de las bicicletas públicas.
+
+### Variables del Modelo (Features)
+* **Temperatura (°C):** Influencia positiva (a mejor tiempo, más alquileres).
+* **Lluvia (mm):** Influencia negativa principal.
+* **Viento (km/h):** Factor disuasorio.
+* **Humedad (%):** Variable de control ambiental.
+
+## 🛠️ Pipeline de Desarrollo
+1.  **Limpieza:** Tratamiento de NaNs y corrección de valores atípicos (Outliers) mediante el método IQR y `np.clip`.
+2.  **Análisis:** Cálculo de correlaciones de Pearson para seleccionar las variables con mayor poder predictivo.
+3.  **Entrenamiento:** División de datos (Train/Test) y normalización estadística ($\mu = 0, \sigma = 1$).
+4.  **Simulación:** Ejecución de una simulación de Monte Carlo (10,000 escenarios) para predecir la demanda ante una ola de calor.
+5.  **Producción:** Exportación del modelo en formato `.npz` y creación de una función de predicción lista para usar.
+
+## 📈 Resultados
+* **MAE (Error Medio Absoluto):** `[Inserta aquí tu MAE]` bicicletas.
+* **Capacidad de Respuesta:** El modelo identifica correctamente la caída de demanda en días lluviosos y el pico en días templados.
+
+## 🚀 Cómo usar
+Para predecir la demanda de un día específico, carga el modelo y usa la función `predecir_demanda`:
+
+```python
+import numpy as np
+
+def predecir(t, h, v, l):
+    # Carga pesos y parámetros de normalización
+    m = np.load('modelo_madridbici.npz')
+    # ... (ver código en notebook)
+    return demanda_estimada
