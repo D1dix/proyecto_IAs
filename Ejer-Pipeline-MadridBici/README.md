@@ -19,7 +19,7 @@ El modelo utiliza una **Regresión Lineal** (entrenada mediante la Ecuación Nor
 5.  **Producción:** Exportación del modelo en formato `.npz` y creación de una función de predicción lista para usar.
 
 ## 📈 Resultados
-* **MAE (Error Medio Absoluto):** `[Inserta aquí tu MAE]` bicicletas.
+* **MAE (Error Medio Absoluto):** 185.76 - 210.98 de bicicletas.
 * **Capacidad de Respuesta:** El modelo identifica correctamente la caída de demanda en días lluviosos y el pico en días templados.
 
 ## 🚀 Cómo usar
