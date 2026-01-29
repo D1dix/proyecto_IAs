@@ -1,67 +1,52 @@
-Este es un README.md diseñado para ser profesional, directo y fácil de entender, resumiendo todos los puntos clave de tu proyecto de limpieza y exploración del dataset Titanic.
+# 🚢 Proyecto Titanic: Limpieza y Exploración de Datos (EDA)
 
-🚢 Proyecto: Limpieza y Exploración del Dataset Titanic
-Este proyecto forma parte del Máster en Inteligencia Artificial y Big Data. El objetivo es realizar un análisis exhaustivo y una limpieza de datos (EDA) sobre el famoso dataset del Titanic para entender qué factores influyeron en la supervivencia de los pasajeros.
+Este proyecto ha sido desarrollado como parte del **Máster en Inteligencia Artificial y Big Data**. El objetivo principal es realizar un análisis profundo y una limpieza profesional del dataset del Titanic, simulando un escenario real para una compañía de seguros marítimos.
 
-📋 Contexto del Proyecto
-Una compañía de seguros marítimos requiere analizar los datos históricos del naufragio del RMS Titanic (1912) para mejorar sus modelos de riesgo y políticas de evacuación en cruceros modernos.
+## 📌 Contexto del Proyecto
+Tras el hundimiento del RMS Titanic en 1912, se busca entender los factores que determinaron la supervivencia. Este análisis es fundamental para calibrar modelos actuariales y mejorar protocolos de seguridad en la industria marítima actual.
 
-🛠️ Tecnologías Utilizadas
-Lenguaje: Python
+## 🛠️ Stack Tecnológico
+* **Lenguaje:** Python 3.x
+* **Librerías:** Pandas (pilar principal para la manipulación de datos)
+* **Entorno:** Jupyter Notebook / Google Colab
 
+---
 
-Librerías: Pandas (Carga, manipulación y limpieza) 
+## 📊 Hallazgos Principales del Análisis
+Tras explorar los datos, se extrajeron las siguientes conclusiones clave:
 
-Entorno: Jupyter Notebook / Google Colab
+| Factor | Impacto en la Supervivencia |
+| :--- | :--- |
+| **Género** | Las **mujeres** sobrevivieron en un **74.2%**, frente al **18.9%** de los hombres. |
+| **Clase (Pclass)** | La **1ª Clase** tuvo la tasa más alta (62.9%), mientras la **3ª Clase** fue la menor (24.2%). |
+| **Edad** | Los **niños** tuvieron prioridad, mostrando tasas de supervivencia superiores a los adultos. |
+| **Familia** | Viajar en **familias pequeñas (2-4 personas)** aumentó las posibilidades de sobrevivir comparado con viajar solo. |
 
-🔍 Hallazgos Principales (EDA)
-Tras explorar los 891 registros del dataset, se identificaron los siguientes patrones clave:
+---
 
-Supervivencia por Sexo: Las mujeres tuvieron una tasa de supervivencia del 74.2% frente al 18.9% de los hombres, confirmando la política de "mujeres y niños primero".
+## 🧹 Proceso de Limpieza y Transformación
+Se realizó un tratamiento riguroso para asegurar la calidad de los datos:
 
-Impacto de la Clase: La Primera Clase tuvo la mayor probabilidad de supervivencia (62.9%), mientras que la Tercera Clase fue la más afectada (24.2%).
+### 1. Gestión de Valores Faltantes (Missings)
+* **Edad (`Age`):** Se utilizó la **mediana** calculada por grupos según el título del pasajero (Mr, Mrs, Miss), evitando sesgos por valores atípicos.
+* **Cabina (`Cabin`):** Dada la alta ausencia de datos (77%), se transformó en una variable binaria: *Tiene Cabina / No Tiene*.
+* **Embarque (`Embarked`):** Imputación por la **moda** (puerto más frecuente).
 
-Factores Combinados: Una mujer de tercera clase tenía más probabilidades de sobrevivir que un hombre de primera clase, lo que indica que el género fue un factor más determinante que el nivel económico.
+### 2. Ingeniería de Variables (Feature Engineering)
+Para mejorar el potencial del dataset, se crearon nuevas características:
+* **Title:** Extracción de títulos sociales (Mr, Miss, Master, etc.) a partir de los nombres.
+* **FamilySize:** Cálculo del total de parientes a bordo.
+* **AgeGroup:** Categorización de pasajeros en grupos (Niño, Adolescente, Adulto, Mayor).
 
-Tamaño Familiar: Las personas que viajaban en familias pequeñas (2-4 miembros) sobrevivieron más que las que viajaban solas o en familias muy grandes.
+---
 
-🧹 Proceso de Limpieza de Datos
-El dataset original presentaba varios desafíos de calidad que fueron resueltos:
+## ⚙️ Automatización: La Función `limpiar_titanic()`
+Se incluye una función optimizada que automatiza todo el proceso anterior. Es ideal para procesar nuevos datos de forma consistente antes de enviarlos a un modelo de Machine Learning.
 
-Gestión de Nulos:
-
-
-Edad (Age): Se imputaron los valores faltantes usando la mediana según el título del pasajero (Mr, Mrs, Miss, etc.), ya que es más robusta frente a valores atípicos que la media.
-
-
-Cabina (Cabin): Al faltar el 77% de los datos, se creó la variable binaria HasCabin (Tiene/No tiene cabina) para rescatar la información útil.
-
-Embarque (Embarked): Se completaron los 2 valores faltantes con la moda (puerto 'S' - Southampton).
-
-Ingeniería de Variables (Feature Engineering):
-
-
-Title: Extraído del nombre del pasajero.
-
-
-FamilySize: Suma de hermanos, cónyuges, padres e hijos.
-
-
-AgeGroup: Categorización en Niños, Adolescentes, Adultos y Mayores.
-
-
-Detección de Anomalías: Se verificó que no existieran edades o tarifas negativas y se identificaron tarifas extremadamente altas (>300 libras) como posibles outliers.
-
-🚀 Función Reutilizable: limpiar_titanic()
-Se desarrolló un pipeline de limpieza automatizado que permite transformar el dataset crudo en uno listo para modelos de Machine Learning en un solo paso.
-
-Python
-# Ejemplo de uso:
-df_limpio = limpiar_titanic(df_original)
-Acciones de la función:
-
-Extrae títulos y crea grupos de edad.
-
-Imputa valores nulos automáticamente.
-
-Elimina columnas irrelevantes (PassengerId, Name, Ticket, Cabin).
+```python
+def limpiar_titanic(df_input):
+    # - Imputa nulos
+    # - Crea variables de familia y títulos
+    # - Categoriza edades
+    # - Elimina columnas irrelevantes (Ticket, Name, etc.)
+    return df_limpio
