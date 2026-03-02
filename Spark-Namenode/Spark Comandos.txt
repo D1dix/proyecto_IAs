@@ -1,0 +1,23 @@
+cd docker-hadoop-spark
+docker compose up -d #Por si acaso
+docker-compose exec namenode bash #Acceder al cliente 
+
+RECUERDA QUE SIEMPRE ES hdfs dfs -
+
+hdfs dfs -mkdir -p /user/root/input
+hdfs dfs -put /home/alturasRev.csv /user/root/input/
+hdfs dfs -ls /user #Entrar al cliente
+hdfs dfs -ls /user/root/input #Compobar que esta por el -put
+
+Para comprobarq ue esta subido el archivo en el servidor spark y iniciamos spark
+
+docker cp C:\Users\ia\Desktop\Spark\script.py spark-master:/tmp/{NOMBRE DE TU ARCHIVO .py}
+docker exec -it spark-master bash
+/spark/bin/spark-submit /{RUTA DONDE LO QUIERES SUBIR}/{Nombre del archivo}.py
+
+INICIAMOS DE NUEVO EL namenode y compobamso los csv generados por el comando
+ 
+hdfs dfs -ls /user/root/output/alturas
+hdfs dfs -cat /user/root/output/alturas/*
+
+AHORA LO MISMO CON LA PRACTICA 
