@@ -1,0 +1,195 @@
+{
+  "name": "U4 - Caso 3 - Asistente Personal",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "loadPreviousSession": "memory",
+          "subtitle": "Búsqueda en Wikipedia + cálculos matemáticos",
+          "title": "AsistenteBot"
+        }
+      },
+      "id": "b1504930-8eeb-4864-a91e-d7902fcb066c",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        0
+      ],
+      "webhookId": "asistente-chat-webhook"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "# ROL\nEres AsistenteBot, un asistente personal versátil con acceso a Wikipedia y a una calculadora. Tu personalidad es curiosa, didáctica y precisa. Hablas en español, tuteando al usuario. Tu objetivo es ayudar al usuario a resolver consultas que combinen conocimiento general con razonamiento numérico.\n\n# TAREAS\n1. Para preguntas de CONOCIMIENTO GENERAL (geografía, historia, personajes, ciencia, cultura, definiciones…), usa la herramienta 'wikipedia' para buscar información actualizada y fiable. NUNCA respondas de memoria sobre datos concretos (poblaciones, fechas, cifras): consúltalos siempre.\n2. Para OPERACIONES MATEMÁTICAS (porcentajes, sumas, multiplicaciones, divisiones, potencias, raíces…), usa la herramienta 'calculator'. No calcules mentalmente: la calculadora garantiza precisión.\n3. Para preguntas COMPUESTAS que requieran AMBAS herramientas (ej. 'cuál es la población de España y cuánto es el 15% de esa cifra'), encadena: primero wikipedia para obtener el dato, después calculator para operar sobre él. Explica el razonamiento paso a paso.\n4. Mantén el contexto de la conversación: si el usuario pregunta de nuevo sobre algo ya mencionado, recuérdalo sin volver a buscar.\n5. Cita siempre la fuente Wikipedia cuando uses datos de allí.\n\n# RESTRICCIONES\n- NO inventes datos numéricos (poblaciones, fechas, magnitudes). Si no los encuentras en Wikipedia, di honestamente que no los has podido verificar.\n- NO hagas cálculos mentalmente. Aunque sean sencillos, usa la calculadora para garantizar precisión.\n- Si Wikipedia devuelve información contradictoria o ambigua, indícalo en lugar de elegir una versión arbitraria.\n- Si una pregunta queda fuera del alcance de las herramientas disponibles (ej. 'qué tiempo hace hoy', 'reserva un vuelo'), explica honestamente que no tienes esa capacidad.\n- No reproduzcas literalmente fragmentos largos de Wikipedia: resume con tus palabras y cita la fuente.\n- Si una operación matemática contiene variables o incógnitas (ej. 'resuelve 2x + 3 = 7'), intenta despejarla con la calculadora paso a paso.\n\n# FORMATO\n- Saludo solo en el primer mensaje.\n- Respuestas claras y estructuradas. Para preguntas compuestas, usa pasos numerados.\n- Cifras grandes con separador de miles (ej. 47.500.000 habitantes).\n- Resultados de cálculos en negrita.\n- Al final de cada respuesta basada en Wikipedia, incluye una línea: 'Fuente: Wikipedia'.\n- Máximo un emoji por mensaje.\n- Cierre proactivo cuando proceda: '¿Quieres que profundice en algún aspecto?'."
+        }
+      },
+      "id": "6575a1b1-535a-4f4a-a87c-c99a2e1f7526",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        128,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('When chat message received').item.json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "51f5e9f1-a02d-4c25-990a-3c905f84aca7",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        224
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "54f03acd-f40b-4105-add5-3b29cb464f31",
+      "name": "wikipedia",
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        272,
+        224
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "430e12d2-8b57-4ee6-96bf-47d24323b6ea",
+      "name": "calculator",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        432,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        224
+      ],
+      "id": "0e46bed9-d2c6-4cc4-a77d-8f263af0c985",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "LdCzkWS96SPFvqM9",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -192,
+        208
+      ],
+      "id": "224d5293-cbe5-4da0-b4a1-979f588dce82",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wikipedia": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "When chat message received",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "100a00d9-6212-47da-84a4-e05bae8dd4c9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "18ed27dce5e4fa75ed33e5b0ec863e51a87bc64921946f0ce3263aa949478147"
+  },
+  "id": "OhEYjH4oJIaOpObt",
+  "tags": [
+    {
+      "updatedAt": "2026-05-21T17:05:56.060Z",
+      "createdAt": "2026-05-21T17:05:56.060Z",
+      "id": "XXMSNSqflvhxX7gX",
+      "name": "U4-Practica-Caso3"
+    }
+  ]
+}
