@@ -1,0 +1,163 @@
+# Asistente RAG para Documentación de Empresa — TechCorp
+
+Práctica Evaluable · Unidad 5 (RAG y Bases Vectoriales) · Opción B (LangChain / Python)
+
+Sistema RAG (Retrieval-Augmented Generation) que responde preguntas sobre la
+documentación interna de una empresa ficticia (TechCorp): políticas de RRHH y
+procedimientos de soporte técnico. Incluye un segundo pipeline **GraphRAG sobre
+Neo4j** y una **interfaz web con Gradio** como bonificaciones.
+
+---
+
+## 1. Arquitectura del sistema
+
+```
+                        INGESTA (offline, una vez)
+  documentos/*.txt ──► Chunking ──► Embeddings ──► ChromaDB (base vectorial)
+   (RRHH, soporte)    (300/30)    (OpenAI ada-002)   colección "empresa_docs"
+
+                        CONSULTA (online, por pregunta)
+  Pregunta ──► Embedding ──► Búsqueda semántica (k=3) ──► Contexto recuperado
+                                                                │
+                                            Prompt + Contexto ──► LLM ──► Respuesta
+                                              (gpt-4o-mini, temp 0.3)
+```
+
+El flujo sigue el patrón RAG clásico: los documentos se trocean y se convierten
+en vectores que se guardan en ChromaDB. Cuando llega una pregunta, se convierte
+en vector, se recuperan los 3 chunks más similares y se inyectan en el prompt
+como contexto. El LLM responde **exclusivamente** a partir de ese contexto, lo
+que evita alucinaciones y permite manejar correctamente las preguntas sin
+respuesta.
+
+## 2. Estructura del repositorio
+
+```
+martin-diego-ml2-u5-rag/
+├── README.md                  ← este documento
+├── .gitignore                 ← ignora .env, chroma_db/, __pycache__/, etc.
+├── .env.example               ← variables de entorno sin valores reales
+├── documentos/                ← documentos .txt de prueba
+│   ├── politicas_rrhh.txt
+│   └── procedimiento_soporte.txt
+├── capturas/                  ← evidencias del sistema funcionando
+└── src/
+    ├── ingesta.py             ← ingesta del Vector RAG base
+    ├── asistente.py           ← asistente RAG base (CLI)
+    ├── ingesta_graphrag.py    ← [extra +1] construcción del grafo en Neo4j
+    ├── asistente_graphrag.py  ← [extra +1] retriever GraphRAG
+    ├── interfaz_web.py        ← [extra +0,5] interfaz web con Gradio
+    └── requirements.txt
+```
+
+## 3. Instalación y uso
+
+```bash
+# 1. Crear entorno e instalar dependencias
+python -m venv rag_env
+source rag_env/bin/activate        # Windows: rag_env\Scripts\activate
+pip install -r src/requirements.txt
+
+# 2. Configurar credenciales
+cp .env.example .env               # y editar .env con la OPENAI_API_KEY real
+
+# 3. Indexar los documentos (solo la primera vez)
+cd src
+python ingesta.py
+
+# 4. Lanzar el asistente
+python asistente.py
+```
+
+## 4. Decisiones técnicas
+
+| Decisión | Valor elegido | Justificación |
+|---|---|---|
+| **Opción** | LangChain (Python) | Permite controlar cada paso del pipeline y depurar los chunks recuperados. |
+| **Base vectorial** | ChromaDB (local) | Sin coste ni cuenta externa; persiste en disco con `persist_directory`. |
+| **Chunk size** | 300 caracteres | Los documentos son cortos y muy estructurados (apartados numerados); chunks pequeños mejoran la precisión de la recuperación. |
+| **Chunk overlap** | 30 caracteres | Evita perder contexto en los límites entre apartados sin duplicar demasiado. |
+| **Separadores** | `\n\n`, `\n`, `. `, ` `, `""` | El `RecursiveCharacterTextSplitter` respeta primero párrafos y líneas, manteniendo juntas las frases de cada política. |
+| **k (docs recuperados)** | 3 | Suficiente para cubrir un apartado completo sin meter ruido de otros temas. |
+| **Embeddings** | text-embedding-ada-002 (1536 dims) | El modelo indicado en el enunciado. |
+| **LLM** | gpt-4o-mini, temperature 0.3 | Económico y rápido; temperatura baja para respuestas deterministas y fieles al contexto. |
+| **Anti-alucinación** | Prompt restrictivo | Instrucción explícita de responder solo con el contexto y un mensaje fijo para cuando no hay información. |
+
+## 5. Ejemplos de funcionamiento (5 consultas obligatorias)
+
+> Las capturas de pantalla de cada interacción están en la carpeta `capturas/`.
+
+| # | Pregunta | Respuesta del sistema | Fuente | ¿Correcta? |
+|---|---|---|---|---|
+| 1 | ¿Cuántos días de vacaciones tengo al año? | "Cada empleado dispone de 23 días laborables de vacaciones al año." | politicas_rrhh.txt | ✅ Sí, dato exacto |
+| 2 | ¿Cuál es el procedimiento para reportar una incidencia técnica? | Devuelve los pasos a)–e) completos (portal, categoría, descripción, capturas, urgencia) + asignación automática de ticket. | procedimiento_soporte.txt | ✅ Sí, pasos completos |
+| 3 | ¿Puedo trabajar desde casa todos los días de la semana? | "No, la política de teletrabajo permite hasta 2 días semanales de trabajo remoto, previa aprobación del responsable directo." | politicas_rrhh.txt | ✅ Sí, interpreta el matiz |
+| 4 | ¿Cuál es el menú del comedor de la empresa? | "No dispongo de información sobre ese tema en la documentación de la empresa. Te recomiendo contactar con el departamento correspondiente." | — | ✅ **Caso negativo correcto** |
+| 5 | ¿Cada cuánto tiempo debo cambiar mi contraseña? | "Debes cambiar tu contraseña cada 90 días." | procedimiento_soporte.txt | ✅ Sí, dato de otro documento |
+
+**Caso negativo (pregunta 4):** es el punto crítico de la rúbrica. El sistema NO
+inventa un menú y responde con el mensaje fijo definido en el prompt. Esto
+confirma que el LLM se ciñe al contexto recuperado y no a su conocimiento previo.
+
+## 6. Mejoras propuestas
+
+1. **Re-ranking de los chunks recuperados.** Añadir un cross-encoder (p. ej.
+   `bge-reranker`) que reordene los k chunks por relevancia real antes de
+   pasarlos al LLM, mejorando la precisión en preguntas ambiguas.
+2. **Historial de conversación persistente.** Incorporar memoria (window buffer)
+   para que el asistente entienda preguntas de seguimiento ("¿y para pedirlas?").
+3. **Citación granular de la fuente.** Devolver no solo el archivo, sino el
+   apartado concreto (p. ej. "Políticas RRHH §2 Vacaciones") para trazabilidad.
+4. **Embeddings multilingües** para soportar documentación en varios idiomas.
+5. **Evaluación automática con RAGAS** (faithfulness, answer relevancy) para
+   medir la calidad de forma objetiva en lugar de cualitativa.
+
+---
+
+## 7. Bonificación: GraphRAG con Neo4j (+1)
+
+Como segundo pipeline comparativo, se construye un **grafo de conocimiento** con
+los mismos documentos usando Neo4j (AuraDB Free) y la librería oficial
+`neo4j-graphrag`, siguiendo la sesión 3.
+
+**Construcción del grafo** (`ingesta_graphrag.py`): el `SimpleKGPipeline` trocea
+los documentos, extrae entidades (Politica, Procedimiento, Departamento, Recurso,
+Plazo) y relaciones (APLICA_A, REQUIERE, GESTIONADO_POR) con el LLM, y escribe
+todo en Neo4j. Sobre los chunks se crea un índice vectorial para el retriever.
+
+**Consulta** (`asistente_graphrag.py`): usa un `VectorCypherRetriever`, que ancla
+en los chunks más similares por vector y luego **recorre el grafo** para traer
+las entidades y relaciones vecinas como contexto adicional.
+
+### Comparación cualitativa Vector RAG vs GraphRAG
+
+> Capturas del grafo en `capturas/` (Neo4j Browser: `MATCH (n) RETURN n LIMIT 100`).
+
+| Pregunta | Vector RAG base | GraphRAG (Neo4j) | Comentario |
+|---|---|---|---|
+| Factual simple ("¿cuántos días de vacaciones?") | ✅ correcta | ✅ correcta | Para datos puntuales el Vector RAG es suficiente. |
+| Multi-hop ("¿qué requisitos tiene el teletrabajo y quién lo aprueba?") | ⚠️ parcial | ✅ completa | El grafo enlaza la política con el recurso (VPN) y el departamento que aprueba. |
+| Estructurada / combinada ("¿qué políticas afectan a quien pide vacaciones y teletrabajo a la vez?") | ⚠️ depende del chunk | ✅ más completa | El recorrido del grafo conecta entidades que viven en chunks distintos. |
+
+**Conclusión:** GraphRAG no sustituye al Vector RAG, lo complementa. Para
+preguntas factuales simples el coste extra de construir el grafo no compensa;
+merece la pena cuando las preguntas son multi-hop o requieren conectar
+información dispersa entre varios documentos.
+
+> NOTA: rellenar esta tabla con las respuestas EXACTAS que devuelva
+> `asistente_graphrag.py` tras ejecutar `ingesta_graphrag.py` sobre los
+> documentos de TechCorp, y adjuntar 1–2 capturas del grafo.
+
+## 8. Bonificación: interfaz web con Gradio (+0,5)
+
+`interfaz_web.py` expone el asistente base en una interfaz de chat web reutilizando
+la misma cadena RAG. Se lanza con `python interfaz_web.py` (en Colab,
+`demo.launch(share=True)` da un enlace público). Captura en `capturas/`.
+
+---
+
+## Notas de seguridad
+
+- Las API keys y credenciales **no** se incluyen en el repositorio: ver
+  `.env.example` y `.gitignore`.
+- Si alguna clave se expone por error, debe revocarse y rotarse antes de entregar.
